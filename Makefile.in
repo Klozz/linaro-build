@@ -502,7 +502,7 @@ CFLAGS_FOR_TARGET += -isystem $(abs_srcdir)/../android/bionic/libc/arch-arm/incl
 endif
 # ARM specific options.
 ifeq ($(target_cpu),arm)
-GCC_CONFIG_ARGS += --with-float=soft --with-fpu=vfp --with-arch=armv5te \
+GCC_CONFIG_ARGS += --with-float=hard --with-fpu=neon-vfpv4 --with-arch=armv7-a \
 	--enable-target-optspace
 ifneq ($(target_os),linux-androideabi)
 GCC_CONFIG_ARGS += --with-abi=aapcs
