@@ -58,6 +58,7 @@ GCC_MIN_VERSION_4_5_0:=@GCC_MIN_VERSION_4_5_0@
 GCC_MIN_VERSION_4_6_0:=@GCC_MIN_VERSION_4_6_0@
 CLOOG_BACKEND:=@CLOOG_BACKEND@
 ENABLE_GRAPHITE:=@ENABLE_GRAPHITE@
+ENABLE_GRAPHITE=yes
 PACKAGE_TO_SRCDIR:=@package_to_srcdir@
 BUILD_ANDROID_GCC:=@BUILD_ANDROID_GCC@
 GDB_TARGET:=@GDB_TARGET@
@@ -470,8 +471,8 @@ endif
 
 # For gcc 4.5+ with graphite optimization, cloog and ppl required.
 ifeq ($(ENABLE_GRAPHITE),yes)
-GCC_CONFIG_ARGS += --with-cloog=${CLOOG_DIR} --with-ppl=${PPL_DIR} \
-	--disable-ppl-version-check --disable-cloog-version-check $(CLOOG_BACKEND)
+GCC_CONFIG_ARGS += --with-cloog=${CLOOG_DIR} \
+	 --disable-cloog-version-check $(CLOOG_BACKEND)
 # link to the static C++ runtime to avoid depending on the host version
 GCC_CONFIG_ARGS += \
 	'--with-host-libstdcxx=-static-libgcc \
@@ -613,7 +614,7 @@ stmp-patch-libgomp-for-android: patch-libgomp-for-android
 
 # Bootstrap compiler: Just the basics so we don't need a libc yet
 .PHONY: build-bootstrap-gcc install-bootstrap-gcc
-stmp-config-bootstrap-gcc: config.status stmp-install-host-ppl stmp-build-target-binutils
+stmp-config-bootstrap-gcc: config.status stmp-build-target-binutils
 	# We should just call
 	# $(call config-gcc,bootstrap,--disable-libgomp)
 	# Unfortunately, the version on make on android-build
@@ -662,7 +663,7 @@ install-bootstrap-gcc: stmp-build-bootstrap-gcc
 
 # Target compiler: The real compiler, may have libc dependencies
 .PHONY: build-target-gcc install-target-gcc-gcc install-target-gcc
-stmp-config-target-gcc: config.status stmp-install-host-ppl stmp-patch-libgomp-for-android stmp-build-target-binutils stmp-build-target-bionic
+stmp-config-target-gcc: config.status stmp-patch-libgomp-for-android stmp-build-target-binutils stmp-build-target-bionic
 	# We should just call
 	# $(call config-gcc,target,--enable-libgomp)
 	# Unfortunately, the version on make on android-build
@@ -718,7 +719,7 @@ ifneq ($(generic_target),)
 # nature not dependent on any libc bits - so we don't need to go through
 # the steps of building a bootstrap compiler first.
 .PHONY: build-generic-target-gcc install-generic-target-gcc install-generic-target-gcc-gcc
-stmp-config-generic-target-gcc: config.status stmp-install-host-ppl stmp-build-target-binutils
+stmp-config-generic-target-gcc: config.status stmp-build-target-binutils
 	# We should just call
 	# $(call config-gcc,generic-target,--disable-libgomp,$(generic_target))
 	# Unfortunately, the version on make on android-build
