@@ -18,7 +18,7 @@ then
 fi;
 
 #Build Configuration
-./configure $PREFIX --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-binutils-version=current --with-cloog-version=current --with-isl-version=0.11.1 --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --with-sysroot=/ --enable-version-specific-runtime-libs
+./configure $PREFIX --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.9.0_arm+graphite" --with-binutils-version=current --with-cloog-version=current --with-isl-version=0.11.1 --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --with-sysroot=/ --enable-version-specific-runtime-libs
 
 #Build the toolchain
 make $J
