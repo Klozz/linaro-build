@@ -1,30 +1,105 @@
 #!/bin/bash
 
-# Set number of cores here
-export J=-j8;
+# Colorize and add text parameters
+red=$(tput setaf 1) # red
+grn=$(tput setaf 2) # green
+cya=$(tput setaf 6) # cyan
+pnk=$(tput bold ; tput setaf 5) # pink
+yel=$(tput bold ; tput setaf 3) # yellow
+pur=$(tput setaf 5) # purple
+txtbld=$(tput bold) # Bold
+bldred=${txtbld}$(tput setaf 1) # red
+bldgrn=${txtbld}$(tput setaf 2) # green
+bldyel=${txtbld}$(tput bold ; tput setaf 3) # yellow
+bldblu=${txtbld}$(tput setaf 4) # blue
+bldpur=${txtbld}$(tput setaf 5) # purple
+bldpnk=${txtbld}$(tput bold ; tput setaf 5) # pink
+bldcya=${txtbld}$(tput setaf 6) # cyan
+txtrst=$(tput sgr0) # Reset
+all1=$(date +%s.%N)
 
-#Make a clean build
+echo ""
+echo "${bldpur}It's time to build some toolchains for.... ${txtrst}"
+echo "${bldpur}                                          ${txtrst}"
+echo "${bldpur} ________________________________________ ${txtrst}"
+echo "${bldpur}|                                        |${txtrst}"
+echo "${bldpur}| _|    _|  _|_|_|    _|_|_|_|  _|_|_|   |${txtrst}"
+echo "${bldpur}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldpur}| _|    _|  _|_|_|    _|_|_|    _|_|_|   |${txtrst}"
+echo "${bldpur}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldpur}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldpur}|   _|_|    _|_|_|    _|_|_|_|  _|    _| |${txtrst}"
+echo "${bldpur}|________________________________________|${txtrst}"
+echo "${bldpur}                                          ${txtrst}"
+sleep 5
+
+panic ()
+{
+    echo "ERROR: $@"
+    exit 1
+}
+
+# Do not use default compiler x86_64-linux-gnu
+# This can cause a lot of problems when attempting to compile a target gcc where the version is much higher than the linux system compiler.
+export CC=gcc-4.8;
+export CXX=g++-4.8;
+
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+
+# Try to parallelize the build for faster performance.
+JOBS="$(cat /proc/cpuinfo | grep -c processor)";
+
+# Determine Make flags
+MAKE_FLAGS=-j"$JOBS";
+
+# Make a clean build
 if [ -e Makefile ];
 then
-    make $J distclean;
+    make $MAKE_FLAGS clean;
+    make $MAKE_FLAGS distclean;
 fi;
 
 export PREFIX_PATH=~/tmp/linaro-arm-eabi-4.10;
 export PREFIX=--prefix=$PREFIX_PATH;
 
-if [ -e $PREFIX_PATH ];
+if [ -d "$PREFIX_PATH" ];
 then
     rm -rf $PREFIX_PATH;
 fi;
 
 #Build Configuration
-./configure $PREFIX --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.10.0_arm+graphite" --with-binutils-version=current --with-cloog-version=current --with-isl-version=0.11.1 --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --with-sysroot=/
+./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.10.0_arm+graphite" --with-binutils-version=current --with-cloog-version=current --with-isl-version=0.11.1 --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --enable-graphite=yes --with-gold-version=current --enable-gold=default
 
 #Build the toolchain
-make $J
+make $MAKE_FLAGS;
 
-#Install the toolchain
-make install;
+#Install the toolchain (twice)
+make install && make install;
 
-echo " "
-read -p "Press ENTER to Exit"
+GCC_INSTALLED=$PREFIX_PATH/bin/arm-eabi-gcc;
+
+# Did we make it?
+if [ -e $GCC_INSTALLED ];
+then
+    echo "${grn} ${txtrst}"
+    echo "${grn}  __  __ __   ___  ____  __   __  __ ${txtrst}"
+    echo "${grn} (( \ || ||  //   ||    (( \ (( \ || ${txtrst}"
+    echo "${grn}  \\  || || ((    ||==   \\   \\  || ${txtrst}"
+    echo "${grn} \_)) \\_//  \\__ ||___ \_)) \_)) .. ${txtrst}"
+    echo "${grn} ${txtrst}"
+    echo "${grn} ${txtrst}"
+    all2=$(date +%s.%N)
+    echo "${bldgrn}Total elapsed time of BUILD AND UPLOADS: ${txtrst}${grn}$(echo "($all2 - $all1) / 60"|bc ) minutes ($(echo "$all2 - $all1"|bc ) seconds) ${txtrst}"
+    echo " "
+    read -p "Press ENTER to Exit"
+else
+    echo " "
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}     Sorry your build failed         ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+fi;
+
