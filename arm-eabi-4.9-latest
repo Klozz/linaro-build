@@ -74,7 +74,7 @@ fi;
 ./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.9.1_arm+graphite" --with-binutils-version=linaro-2.24-2014.03 --with-cloog-version=current --with-isl-version=0.11.1 --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=1.0.2 --with-gdb-version=linaro-7.6.1-2013.10 --with-gold-version=linaro-2.24-2014.03 --enable-gold=default
 
 #Build the toolchain
-script -q ~/SM-Compile.log -c "make $MAKE_FLAGS;"
+script -q ~/Linaro-Compile.log -c "make $MAKE_FLAGS;"
 
 #Install the toolchain (twice)
 make install && make install;
