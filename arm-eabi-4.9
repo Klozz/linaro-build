@@ -81,17 +81,17 @@ GCC_INSTALLED=$PREFIX_PATH/bin/arm-eabi-gcc;
 # Did we make it?
 if [ -e $GCC_INSTALLED ];
 then
-    echo "${grn} ${txtrst}"
-    echo "${grn}  __  __ __   ___  ____  __   __  __ ${txtrst}"
-    echo "${grn} (( \ || ||  //   ||    (( \ (( \ || ${txtrst}"
-    echo "${grn}  \\  || || ((    ||==   \\   \\  || ${txtrst}"
-    echo "${grn} \_)) \\_//  \\__ ||___ \_)) \_)) .. ${txtrst}"
-    echo "${grn} ${txtrst}"
-    echo "${grn} ${txtrst}"
+    echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn}      _/_/_/                                                            ${txtrst}"
+    echo "${bldgrn}   _/        _/    _/    _/_/_/    _/_/_/    _/_/      _/_/_/    _/_/_/ ${txtrst}"
+    echo "${bldgrn}    _/_/    _/    _/  _/        _/        _/_/_/_/  _/_/      _/_/     ${txtrst}"
+    echo "${bldgrn}       _/  _/    _/  _/        _/        _/            _/_/      _/_/  ${txtrst}"
+    echo "${bldgrn}_/_/_/      _/_/_/    _/_/_/    _/_/_/    _/_/_/  _/_/_/    _/_/_/      ${txtrst}"
+    echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn} ${txtrst}"
     all2=$(date +%s.%N)
     echo "${bldgrn}Total elapsed time: ${txtrst}${grn}$(echo "($all2 - $all1) / 60"|bc ) minutes ($(echo "$all2 - $all1"|bc ) seconds) ${txtrst}"
-    echo " "
-    read -p "Press ENTER to Exit"
+    sleep 5
 else
     echo " "
     echo "${bldred}**************ERROR***************** ${txtrst}"
@@ -101,5 +101,7 @@ else
     echo "${bldred}**************ERROR***************** ${txtrst}"
     echo "${bldred}**************ERROR***************** ${txtrst}"
     echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo " "
+    read -p "Press ENTER to Exit"
 fi;
 
