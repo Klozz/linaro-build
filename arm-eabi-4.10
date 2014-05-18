@@ -46,6 +46,9 @@ export CXX=g++-4.8;
 
 export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
+# Make sure gcc is on the right remote branch Linaro 4.10
+cd ../gcc/gcc-UBER && git fetch gh linaro-4.10 && git checkout FETCH_HEAD && cd ../../build;
+
 # Try to parallelize the build for faster performance.
 JOBS="$(cat /proc/cpuinfo | grep -c processor)";
 
@@ -88,6 +91,7 @@ then
     echo "${bldgrn}       _/  _/    _/  _/        _/        _/            _/_/      _/_/  ${txtrst}"
     echo "${bldgrn}_/_/_/      _/_/_/    _/_/_/    _/_/_/    _/_/_/  _/_/_/    _/_/_/      ${txtrst}"
     echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn}Your LINARO 4.10.0 arm-eabi Toolchain for kernel has completed successfully!!! ${txtrst}"
     echo "${bldgrn} ${txtrst}"
     all2=$(date +%s.%N)
     echo "${bldgrn}Total elapsed time: ${txtrst}${grn}$(echo "($all2 - $all1) / 60"|bc ) minutes ($(echo "$all2 - $all1"|bc ) seconds) ${txtrst}"

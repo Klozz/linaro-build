@@ -91,6 +91,7 @@ then
     echo "${bldgrn}       _/  _/    _/  _/        _/        _/            _/_/      _/_/  ${txtrst}"
     echo "${bldgrn}_/_/_/      _/_/_/    _/_/_/    _/_/_/    _/_/_/  _/_/_/    _/_/_/      ${txtrst}"
     echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn}Your LINARO 4.10.0 arm-eabi Toolchain for kernel has completed successfully!!! ${txtrst}"
     echo "${bldgrn} ${txtrst}"
     all2=$(date +%s.%N)
     echo "${bldgrn}Total elapsed time: ${txtrst}${grn}$(echo "($all2 - $all1) / 60"|bc ) minutes ($(echo "$all2 - $all1"|bc ) seconds) ${txtrst}"
