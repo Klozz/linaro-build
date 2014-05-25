@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# Colorize and add text parameters
+red=$(tput setaf 1) # red
+grn=$(tput setaf 2) # green
+cya=$(tput setaf 6) # cyan
+pnk=$(tput bold ; tput setaf 5) # pink
+yel=$(tput bold ; tput setaf 3) # yellow
+pur=$(tput setaf 5) # purple
+txtbld=$(tput bold) # Bold
+bldred=${txtbld}$(tput setaf 1) # red
+bldgrn=${txtbld}$(tput setaf 2) # green
+bldyel=${txtbld}$(tput bold ; tput setaf 3) # yellow
+bldblu=${txtbld}$(tput setaf 4) # blue
+bldpur=${txtbld}$(tput setaf 5) # purple
+bldpnk=${txtbld}$(tput bold ; tput setaf 5) # pink
+bldcya=${txtbld}$(tput setaf 6) # cyan
+txtrst=$(tput sgr0) # Reset
+all1=$(date +%s.%N)
+
+echo ""
+echo "${bldblu}It's time to build LINARO toolchains for.... ${txtrst}"
+echo "${bldblu}                                          ${txtrst}"
+echo "${bldblu} ________________________________________ ${txtrst}"
+echo "${bldblu}|                                        |${txtrst}"
+echo "${bldblu}| _|    _|  _|_|_|    _|_|_|_|  _|_|_|   |${txtrst}"
+echo "${bldblu}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldblu}| _|    _|  _|_|_|    _|_|_|    _|_|_|   |${txtrst}"
+echo "${bldblu}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldblu}| _|    _|  _|    _|  _|        _|    _| |${txtrst}"
+echo "${bldblu}|   _|_|    _|_|_|    _|_|_|_|  _|    _| |${txtrst}"
+echo "${bldblu}|________________________________________|${txtrst}"
+echo "${bldblu}                                          ${txtrst}"
+sleep 5
+
+panic ()
+{
+    echo "ERROR: $@"
+    exit 1
+}
+
+# Do not use default compiler x86_64-linux-gnu
+# This can cause a lot of problems when attempting to compile a target gcc where the version is much higher than the linux system compiler.
+export CC=gcc-4.8;
+export CXX=g++-4.8;
+
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+
+# Make sure gcc is on the right remote branch Linaro 4.8
+cd ../gcc/gcc-UBER && git fetch gh linaro-4.8 && git checkout FETCH_HEAD && cd ../../build;
+
+# Try to parallelize the build for faster performance.
+JOBS="$(cat /proc/cpuinfo | grep -c processor)";
+
+# Determine Make flags
+MAKE_FLAGS=-j"$JOBS";
+
+# Make a clean build
+if [ -e Makefile ];
+then
+    make $MAKE_FLAGS clean;
+    make $MAKE_FLAGS distclean;
+fi;
+
+export PREFIX_PATH=~/android/kernel/TOOLCHAINS/linaro-4.8;
+export PREFIX=--prefix=$PREFIX_PATH;
+
+if [ -d "$PREFIX_PATH" ];
+then
+    rm -rf $PREFIX_PATH;
+fi;
+
+#Build Configuration
+./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.8.3_arm+graphite" --with-binutils-version=current --with-cloog-version=current --enable-graphite=yes --with-gmp-version=6.0.0 --with-mpfr-version=3.1.2 --with-mpc-version=1.0.2 --with-gdb-version=current --with-gold-version=current --enable-gold=default
+
+#Build the toolchain
+script -q ~/Linaro-Compile.log -c "make $MAKE_FLAGS;"
+
+#Install the toolchain (twice)
+make install && make install;
+
+GCC_INSTALLED=$PREFIX_PATH/bin/arm-eabi-gcc;
+
+# Did we make it?
+if [ -e $GCC_INSTALLED ];
+then
+    echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn}      _/_/_/                                                            ${txtrst}"
+    echo "${bldgrn}   _/        _/    _/    _/_/_/    _/_/_/    _/_/      _/_/_/    _/_/_/ ${txtrst}"
+    echo "${bldgrn}    _/_/    _/    _/  _/        _/        _/_/_/_/  _/_/      _/_/     ${txtrst}"
+    echo "${bldgrn}       _/  _/    _/  _/        _/        _/            _/_/      _/_/  ${txtrst}"
+    echo "${bldgrn}_/_/_/      _/_/_/    _/_/_/    _/_/_/    _/_/_/  _/_/_/    _/_/_/      ${txtrst}"
+    echo "${bldgrn} ${txtrst}"
+    echo "${bldgrn}Your LINARO 4.8.3 arm-eabi Toolchain for kernel has completed successfully!!! ${txtrst}"
+    echo "${bldgrn} ${txtrst}"
+    all2=$(date +%s.%N)
+    echo "${bldgrn}Total elapsed time: ${txtrst}${grn}$(echo "($all2 - $all1) / 60"|bc ) minutes ($(echo "$all2 - $all1"|bc ) seconds) ${txtrst}"
+    sleep 5
+else
+    echo " "
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}     Sorry your build failed         ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo "${bldred}**************ERROR***************** ${txtrst}"
+    echo " "
+    read -p "Press ENTER to Exit"
+fi;
+
