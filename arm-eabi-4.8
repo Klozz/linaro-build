@@ -71,7 +71,7 @@ then
 fi;
 
 #Build Configuration
-./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.8.4_arm+graphite" --with-binutils-version=current --with-cloog-version=current --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --enable-graphite=yes
+./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.8.4_arm+graphite" --with-binutils-version=current --with-cloog-version=current --enable-graphite=yes --with-gmp-version=current --with-mpfr-version=current --with-mpc-version=current --with-gdb-version=current --enable-graphite=yes
 
 #Build the toolchain
 script -q ~/uber_toolchain/Linaro-4.8-Nightly.log -c "make $MAKE_FLAGS;"
