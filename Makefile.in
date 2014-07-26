@@ -53,9 +53,7 @@ INSTALL:=@INSTALL@
 INSTALL_DATA:=@INSTALL_DATA@
 TOPLEVEL_CONFIGURE_ARGUMENTS:=@TOPLEVEL_CONFIGURE_ARGUMENTS@
 baseargs = @baseargs@
-GCC_MIN_VERSION_4_3_0:=@GCC_MIN_VERSION_4_3_0@
-GCC_MIN_VERSION_4_5_0:=@GCC_MIN_VERSION_4_5_0@
-GCC_MIN_VERSION_4_6_0:=@GCC_MIN_VERSION_4_6_0@
+GCC_MIN_VERSION_4_8_0:=@GCC_MIN_VERSION_4_8_0@
 CLOOG_BACKEND:=@CLOOG_BACKEND@
 ENABLE_GRAPHITE:=@ENABLE_GRAPHITE@
 ENABLE_GRAPHITE=yes
@@ -225,15 +223,6 @@ ifeq ($(generic_target),aarch64-unknown-)
 generic_target := aarch64-none-elf
 endif
 
-ifeq ($(target_cpu),aarch64)
-# No bionic or gdb for aarch64 yet...
-build: build-target-binutils build-generic-target-binutils build-host-libbfd \
-	build-bootstrap-gcc build-generic-target-gcc
-
-install: install-target-binutils install-generic-target-binutils \
-	install-host-libbfd install-bootstrap-gcc install-generic-target-gcc
-else
-ifeq ($(GCC_MIN_VERSION_4_5_0),yes)
 build: build-target-binutils build-generic-target-binutils build-host-libbfd \
 	build-target-gcc build-generic-target-gcc \
 	build-target-gdb remove-bionic
@@ -241,17 +230,6 @@ build: build-target-binutils build-generic-target-binutils build-host-libbfd \
 install: install-target-binutils install-generic-target-binutils \
 	install-host-libbfd install-target-gcc install-generic-target-gcc \
 	install-target-gdb
-else
-# gcc < 4.5 is too broken to build a proper target compiler
-# But it's sufficient to build the bootstrap target compiler...
-build: build-target-binutils build-generic-target-binutils build-host-libbfd \
-	build-bootstrap-gcc build-generic-target-gcc build-target-gdb
-
-install: install-target-binutils install-generic-target-binutils \
-	install-host-libbfd install-bootstrap-gcc install-generic-target-gcc \
-	install-target-gdb
-endif
-endif
 else
 build: build-target-binutils build-host-libbfd build-bootstrap-gcc \
 	build-target-gdb
@@ -321,7 +299,7 @@ config-target-binutils: stmp-config-target-binutils
 # We do not want to enable shared libraries in binutils
 BINUTILS_CONFIG_ARGS=--prefix=$(prefix) \
 	--host=${cur_host} --build=${cur_build} \
-	$(baseargs) --disable-shared --disable-werror --disable-ppl-version-check
+	$(baseargs) --disable-shared --disable-werror --disable-ppl-version-check --enable-plugins
 ifeq ($(BINUTILS_VERSION),binutils-2.20.1)
 BINUTILS_CONFIG_ARGS+= --enable-gold=both/gold
 else
@@ -457,21 +435,17 @@ GCC_CONFIG_ARGS=--prefix=$(prefix) \
 
 # For gcc versions 4.3.0 and later, gmp and mpfr are required.
 # Also build libgcc is a seperate sub-target in 4.3.0+.
-ifeq ($(GCC_MIN_VERSION_4_3_0),yes)
 stmp-config-bootstrap-gcc: stmp-install-host-gmp stmp-install-host-mpfr
 GCC_CONFIG_ARGS += --with-gmp=$(GMP_DIR) --with-mpfr=$(MPFR_DIR)
-endif
 
 # For gcc versions 4.5.0 and higher, mpc is required.
-ifeq ($(GCC_MIN_VERSION_4_5_0),yes)
 stmp-config-bootstrap-gcc: stmp-install-host-mpc
 GCC_CONFIG_ARGS += --with-mpc=$(MPC_DIR)
-endif
 
 # For gcc 4.5+ with graphite optimization, cloog and ppl required.
 ifeq ($(ENABLE_GRAPHITE),yes)
-GCC_CONFIG_ARGS += --with-cloog=${CLOOG_DIR} \
-	 --disable-cloog-version-check $(CLOOG_BACKEND)
+GCC_CONFIG_ARGS += --with-cloog=${CLOOG_DIR} --with-ppl=${PPL_DIR} \
+	--disable-ppl-version-check --disable-cloog-version-check --disable-isl-version-check $(CLOOG_BACKEND)
 # link to the static C++ runtime to avoid depending on the host version
 GCC_CONFIG_ARGS += \
 	'--with-host-libstdcxx=-static-libgcc \
@@ -487,19 +461,21 @@ ifeq ($(BUILD_ANDROID_GCC),yes)
 GCC_CONFIG_ARGS += $(GCC_CONFIG_LIBSTDCXX_V3) --disable-libssp \
 	--disable-nls --disable-libmudflap \
 	--disable-shared --disable-sjlj-exceptions \
-	--disable-libquadmath --disable-libitm --disable-libatomic \
+	--disable-libquadmath --disable-libitm \
 	--disable-libsanitizer
 CFLAGS_FOR_TARGET += -DTARGET_POSIX_IO -fno-short-enums
+ifeq ($(target_cpu),aarch64)
+TARGET_PLATFORM := arm64
+ANDROID_OUTDIR := generic_$(TARGET_PLATFORM)
+else
+TARGET_PLATFORM := $(target_cpu)
+ANDROID_OUTDIR := generic
+endif
 # We need to find pthread.h to build libgcc with threading support.
 # -include .../sys/limits.h is a workaround for Bionic's ptherad.h requiring
 # LONG_BIT, which usually comes in through limits.h -- but gcc has its own
 # version of that which fails to include sys/limits.h
-CFLAGS_FOR_TARGET += -isystem $(abs_srcdir)/../android/bionic/libc/include -isystem $(abs_srcdir)/../android/bionic/libc/kernel/common -isystem $(abs_srcdir)/../android/bionic/libc/kernel/arch-$(target_cpu) -isystem $(abs_srcdir)/../android/bionic/libc/arch-$(target_cpu)/include -isystem $(abs_srcdir)/../android/bionic/libm/include -isystem $(abs_srcdir)/../android/bionic/libm/include/arm -isystem $(abs_srcdir)/../android/bionic/libm/arm -include $(abs_srcdir)/../android/bionic/libc/include/sys/limits.h
-ifeq ($(target_cpu),aarch64)
-# AArch64 doesn't have bionic/libc/arch-aarch64 directories yet, for now, let's use
-# traditional ARM and see what breaks
-CFLAGS_FOR_TARGET += -isystem $(abs_srcdir)/../android/bionic/libc/arch-arm/include -isystem $(abs_srcdir)/../android/bionic/libc/kernel/arch-arm
-endif
+CFLAGS_FOR_TARGET += -isystem $(abs_srcdir)/../android/bionic/libc/include -isystem $(abs_srcdir)/../android/bionic/libc/kernel/common -isystem $(abs_srcdir)/../android/bionic/libc/arch-$(TARGET_PLATFORM)/include -isystem $(abs_srcdir)/../android/bionic/libm/include -isystem $(abs_srcdir)/../android/bionic/libm/include/arm -isystem $(abs_srcdir)/../android/bionic/libm/arm -isystem $(abs_srcdir)/../android/bionic/libc/kernel/uapi -isystem $(abs_srcdir)/../android/bionic/libc/kernel/uapi/asm-$(TARGET_PLATFORM) -include $(abs_srcdir)/../android/bionic/libc/include/sys/limits.h
 # ARM specific options.
 ifeq ($(target_cpu),arm)
 GCC_CONFIG_ARGS += --with-float=hard --with-fpu=neon-vfpv4 --with-arch=armv7-a \
@@ -527,19 +503,13 @@ stmp-build-target-bionic: install-target-binutils install-bootstrap-gcc
 			exit 1 ; \
 		fi ; \
 	fi
-ifeq ($(target_cpu),aarch64)
-	# Until we have aarch64 support in build/core, just remove aarch32 specific flags
-	sed -i -e 's,-msoft-float,,;s,-mfloat-abi=softfp,,;s,-mfpu=neon,,;s,-mthumb-interwork,,g;s,-mthumb,,g;s,-march=armv7-a,,g;s,-fstack-protector,,g;s|-Wl,--fix-cortex-a8||g;s|-Wl,--no-fix-cortex-a8||g' $(abs_srcdir)/../android/build/core/combo/TARGET_linux-arm.mk $(abs_srcdir)/../android/build/core/combo/arch/arm/*.mk $(abs_srcdir)/../android/build/core/raw_executable.mk
-	# No gold on aarch64 yet...
-	sed -i -e 's|-Wl,--icf=safe||g' $(abs_srcdir)/../android/build/core/combo/TARGET_linux-arm.mk $(abs_srcdir)/../android/build/core/combo/arch/arm/*.mk
-endif
 	# Building elfutils is necessary for ICS Bionic, but no longer for JellyBean
 	# Uncomment the line below if you're trying to build against a pre-JB Android tree.
-	#ONE_SHOT_MAKEFILE=external/elfutils/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=pandaboard
-	ONE_SHOT_MAKEFILE=build/libs/host/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=pandaboard WITHOUT_LIBCOMPILER_RT=1
-	ONE_SHOT_MAKEFILE=build/tools/acp/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=pandaboard WITHOUT_LIBCOMPILER_RT=1
-	ONE_SHOT_MAKEFILE=bionic/Android.mk make -C $(abs_srcdir)/../android all_modules out/target/product/pandaboard/obj/lib/crtbegin_dynamic.o TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=pandaboard WITHOUT_LIBCOMPILER_RT=1 BUILD_TINY_ANDROID=true
-	cp $(abs_srcdir)/../android/out/target/product/pandaboard/obj/lib/* $(prefix)/$(target_no_unknown)/lib/
+	#ONE_SHOT_MAKEFILE=external/elfutils/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=aosp_$(TARGET_PLATFORM)
+	ONE_SHOT_MAKEFILE=build/libs/host/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=aosp_$(TARGET_PLATFORM) WITHOUT_LIBCOMPILER_RT=1 PRIVATE_TARGET_LIBATOMIC="" TARGET_2ND_ARCH=""
+	ONE_SHOT_MAKEFILE=build/tools/acp/Android.mk make -C $(abs_srcdir)/../android all_modules TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=aosp_$(TARGET_PLATFORM) WITHOUT_LIBCOMPILER_RT=1 PRIVATE_TARGET_LIBATOMIC="" TARGET_2ND_ARCH=""
+	ONE_SHOT_MAKEFILE=bionic/Android.mk make -C $(abs_srcdir)/../android all_modules out/target/product/$(ANDROID_OUTDIR)/obj/lib/crtbegin_dynamic.o TARGET_TOOLS_PREFIX=$(prefix)/bin/${cur_target}- TARGET_PRODUCT=aosp_$(TARGET_PLATFORM) WITHOUT_LIBCOMPILER_RT=1 BUILD_TINY_ANDROID=true PRIVATE_TARGET_LIBATOMIC="" TARGET_2ND_ARCH=""
+	cp $(abs_srcdir)/../android/out/target/product/$(ANDROID_OUTDIR)/obj/lib/* $(prefix)/$(target_no_unknown)/lib/
 	touch dummy.c
 	$(prefix)/bin/${cur_target}-gcc -o dummy.o -c dummy.c
 	$(prefix)/bin/${cur_target}-ar cru $(prefix)/$(target_no_unknown)/lib/libpthread.a dummy.o
@@ -550,7 +520,7 @@ endif
 # to build bionic in the Android build rather than the toolchain build so it
 # is compiled with the optimal settings for the target board.
 remove-bionic:
-	rm -f $(prefix)/$(target_no_unknown)/lib/libc* $(prefix)/$(target_no_unknown)/lib/libm.so $(prefix)/$(target_no_unknown)/lib/libdl.so $(prefix)/$(target_no_unknown)/lib/crt*.o
+	rm -f $(prefix)/$(target_no_unknown)/lib/libc* $(prefix)/$(target_no_unknown)/lib/libm.so $(prefix)/$(target_no_unknown)/lib/libdl.so $(prefix)/$(target_no_unknown)/lib/crt*.o $(prefix)/$(target_no_unknown)/lib64/libc* $(prefix)/$(target_no_unknown)/lib64/libm.so $(prefix)/$(target_no_unknown)/lib64/libdl.so $(prefix)/$(target_no_unknown)/lib64/crt*.o
 	rm -f stmp-build-target-bionic
 else
 stmp-build-target-bionic:
@@ -680,7 +650,7 @@ stmp-config-target-gcc: config.status stmp-patch-libgomp-for-android stmp-build-
 	 export CFLAGS="-O2" ; \
 	 export CXXFLAGS="-O2" ; \
 	 $(call find-package-srcdir, $(GCC_VERSION))/configure \
-	  $(GCC_CONFIG_ARGS) --target=$$TARGET --enable-threads --enable-tls --enable-libgomp --disable-libitm --disable-libsanitizer --disable-libatomic --disable-libstdc__-v3) && \
+	  $(GCC_CONFIG_ARGS) --target=$$TARGET --enable-threads --enable-tls --enable-libgomp --disable-libitm --disable-libsanitizer --enable-libatomic --disable-libstdc__-v3) && \
 	$(STAMP) $@
 build-target-gcc: stmp-build-target-gcc
 stmp-build-target-gcc: stmp-config-target-gcc
@@ -772,11 +742,7 @@ endif
 # minimal gcc only builds the C and C++ compilers and libgcc
 # We use the full gcc configure rules.
 .PHONY: build-target-minimal-gcc install-target-minimal-gcc
-ifeq ("$(GCC_MIN_VERSION_4_3_0)","yes")
 MINIMAL_GCC_BUILD_TARGETS:= gcc target-libgcc 
-else
-MINIMAL_GCC_BUILD_TARGETS:= gcc
-endif
 
 build-target-minimal-gcc: stmp-build-target-minimal-gcc
 stmp-build-target-minimal-gcc: stmp-config-target-gcc
@@ -898,6 +864,7 @@ install-host-mpc: stmp-install-host-mpc
 
 # host ppl rules
 .PHONY: config-host-ppl build-host-ppl install-host-ppl
+ifeq ($(ENABLE_GRAPHITE),yes)
 config-host-ppl: stmp-config-host-ppl
 PPL_CONFIG_ARGS=$(baseargs) --prefix=$(TEMP_INSTALLDIR) --disable-shared \
 		--target=${target_alias} \
@@ -952,6 +919,31 @@ stmp-install-host-cloog: stmp-build-host-cloog
 		install-pkgincludeHEADERS
 	$(STAMP) $@
 install-host-cloog: stmp-install-host-cloog
+else
+config-host-ppl:
+
+stmp-config-host-ppl:
+
+stmp-build-host-ppl:
+
+build-host-ppl:
+
+stmp-install-host-ppl:
+
+install-host-ppl:
+
+config-host-cloog:
+
+stmp-config-host-cloog:
+
+stmp-build-host-cloog:
+
+build-host-cloog:
+
+stmp-install-host-cloog:
+
+install-host-cloog:
+endif
 
 # target gdb rules
 .PHONY: config-target-gdb build-target-gdb install-target-gdb
