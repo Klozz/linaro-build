@@ -71,7 +71,7 @@ then
 fi;
 
 #Build Configuration
-./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.9.1_arm+graphite" --with-binutils-version=linaro-2.24.0-2014.07-1 --with-cloog-version=current --enable-graphite=yes --with-gmp-version=6.0.0 --with-mpfr-version=3.1.2 --with-mpc-version=1.0.2 --with-gdb-version=linaro-7.7.1-2014.06
+./configure $PREFIX --with-local-prefix=/usr --with-sysroot=/ --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --program-transform-name='s&^&arm-eabi-&' --with-gcc-version=UBER --with-pkgversion="UBER-Linaro-4.9.2_arm+graphite" --with-binutils-version=linaro-2.24.0-2014.08 --with-cloog-version=current --enable-graphite=yes --with-gmp-version=6.0.0 --with-mpfr-version=3.1.2 --with-mpc-version=1.0.2 --with-gdb-version=linaro-7.8-2014.08
 
 #Build the toolchain
 make $MAKE_FLAGS;
@@ -91,7 +91,7 @@ then
     echo "${bldgrn}       _/  _/    _/  _/        _/        _/            _/_/      _/_/  ${txtrst}"
     echo "${bldgrn}_/_/_/      _/_/_/    _/_/_/    _/_/_/    _/_/_/  _/_/_/    _/_/_/      ${txtrst}"
     echo "${bldgrn} ${txtrst}"
-    echo "${bldgrn}Your LINARO 4.9.1 arm-eabi Toolchain for kernel has completed successfully!!! ${txtrst}"
+    echo "${bldgrn}Your LINARO 4.9.2 arm-eabi Toolchain for kernel has completed successfully!!! ${txtrst}"
     echo "${bldgrn}Toolchain is located at:${txtrst}${grn} $PREFIX_PATH ${txtrst}"
     echo "${bldgrn} ${txtrst}"
     all2=$(date +%s.%N)
